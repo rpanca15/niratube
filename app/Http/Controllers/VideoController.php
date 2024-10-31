@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Videos;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,11 +15,18 @@ class VideoController extends Controller
     {
         $search = $request->query('search');
 
-        // Jika ada pencarian, filter video berdasarkan judul
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $userId = Auth::user()->id;
+
         if ($search) {
-            $videos = Videos::where('title', 'LIKE', '%' . $search . '%')->paginate(10);
+            $videos = Videos::where('title', 'LIKE', '%' . $search . '%')
+                ->where('uploader_id', $userId) // Filter berdasarkan ID pengguna
+                ->paginate(10);
         } else {
-            $videos = Videos::paginate(10);
+            $videos = Videos::where('uploader_id', $userId)->paginate(10);
         }
 
         return view('videos.index', compact('videos'));
@@ -33,7 +41,7 @@ class VideoController extends Controller
     {
         // Validasi form
         $request->validate([
-            'video'         => 'required|mimes:mp4,avi,mov|max:20480', // 20MB untuk video
+            'video'         => 'required|mimes:mp4,avi,mov,mkv|max:20480', // 20MB untuk video
             'title'         => 'required|min:5',
             'description'   => 'required|min:10',
             'category'      => 'required|string',
@@ -51,7 +59,7 @@ class VideoController extends Controller
             'description'   => $request->description,
             'category'      => $request->category,
             'status'        => $request->privacy,
-            'uploader_id'   => 0,
+            'uploader_id'   => Auth::user()->id,
             'views'         => 0, // Awal views adalah 0
             'likes'         => 0, // Awal likes adalah 0
         ]);
@@ -66,7 +74,7 @@ class VideoController extends Controller
 
         $relatedVideos = Videos::where('category', $video->category)
             ->where('id', '!=', $id)
-            ->limit(5)
+            ->limit(20)
             ->get();
 
         return view('videos.show', compact('video', 'relatedVideos'));
@@ -82,7 +90,7 @@ class VideoController extends Controller
     {
         // Validasi form
         $request->validate([
-            'video' => 'nullable|mimes:mp4,avi,mov|max:20480', // 20MB
+            'video' => 'nullable|mimes:mp4,avi,mov|max:204800', // 200MB
             'title' => 'required|min:5',
             'description' => 'required|min:10',
             'category' => 'required|string',
@@ -90,13 +98,6 @@ class VideoController extends Controller
         ]);
 
         $video = Videos::findOrFail($id);
-
-        if ($request->hasFile('video')) {
-            Storage::delete('public/videos/' . $video->video);
-            $newVideo = $request->file('video');
-            $newVideo->storeAs('public/videos', $newVideo->hashName());
-            $video->video = $newVideo->hashName();
-        }
 
         $video->update([
             'title' => $request->title,
@@ -112,10 +113,21 @@ class VideoController extends Controller
     {
         $video = Videos::findOrFail($id);
 
-        Storage::delete('public/videos/' . $video->video);
+        // Hapus file video jika ada
+        if ($video->video && Storage::exists('public/videos/' . $video->video)) {
+            Storage::delete('public/videos/' . $video->video);
+        }
 
+        // Hapus entri video dari database
         $video->delete();
 
-        return redirect()->route('videos.index')->with(['success' => 'Data Berhasil Dihapus!']);
+        return redirect()->route('videos.index')->with(['success' => 'Video Berhasil Dihapus!']);
+    }
+
+    public function incrementViews($id)
+    {
+        $video = Videos::findOrFail($id);
+        $video->increment('views');
+        return response()->json(['success' => true]);
     }
 }
