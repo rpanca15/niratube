@@ -20,12 +20,10 @@ class LoginController extends Controller
             'password' => 'required',
         ]);
 
-        // Mencoba login
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             return redirect()->intended('/')->with('success', 'Login berhasil!');
         }
 
-        // Jika gagal login, kembali ke halaman login dengan error
         return back()->withErrors([
             'email' => 'Email atau password salah.',
         ]);
