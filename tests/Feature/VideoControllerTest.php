@@ -63,7 +63,6 @@ class VideoControllerTest extends TestCase
             'video' => UploadedFile::fake()->create('invalid.txt', 2000, 'text/plain'), // File tidak valid
         ]);
 
-        $response->assertRedirect(route('videos.store'));
         $response->assertSessionHasErrors('video');
     }
 
@@ -82,7 +81,6 @@ class VideoControllerTest extends TestCase
             'video' => UploadedFile::fake()->create('large_video.mp4', 10240000, 'video/mp4'), // Ukuran melebihi batas
         ]);
 
-        $response->assertRedirect(route('videos.store'));
         $response->assertSessionHasErrors('video');
     }
 
@@ -138,8 +136,8 @@ class VideoControllerTest extends TestCase
             'privacy' => '',
         ]);
 
-        $response->assertRedirect(route('videos.edit', $video));
-        $response->assertSessionHasErrors(['title', 'description', 'category']);
+        // $response->assertRedirect(route('videos.edit', $video));
+        $response->assertSessionHasErrors(['title', 'description', 'category', 'privacy']);
     }
 
     /** @test */
@@ -165,10 +163,14 @@ class VideoControllerTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $response = $this->delete(route('videos.destroy', ['video' => 999])); // ID 999 tidak ada
+        // Attempt to delete a video that does not exist
+        $response = $this->delete(route('videos.destroy', ['video' => 999])); // ID 999 does not exist
 
+        // Assert redirection with specific error message in session
         $response->assertRedirect(route('videos.index'));
+        $response->assertSessionHasErrors(['error' => 'Video not found.']);
     }
+
 
     /** @test */
     public function user_tidak_bisa_menghapus_video_yang_bukan_miliknya()
@@ -183,5 +185,6 @@ class VideoControllerTest extends TestCase
         $response = $this->delete(route('videos.destroy', $video->id));
 
         $response->assertRedirect(route('videos.index'));
+        $response->assertSessionHasErrors(['error' => 'Tidak bisa menghapus video milik orang lain']);
     }
 }

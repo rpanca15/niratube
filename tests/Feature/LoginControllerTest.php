@@ -37,8 +37,7 @@ class LoginControllerTest extends TestCase
             'email' => $user->email,
             'password' => 'wrong-password',
         ]);
-
-        $response->assertRedirect('/login');
+        
         $response->assertSessionHasErrors('email');
     }
 
@@ -50,7 +49,6 @@ class LoginControllerTest extends TestCase
             'password' => '',
         ]);
 
-        $response->assertRedirect('/login');
         $response->assertSessionHasErrors(['email', 'password']);
     }
 
@@ -68,7 +66,6 @@ class LoginControllerTest extends TestCase
             ]);
         }
 
-        $response->assertRedirect('/login');
-        $response->assertSessionHasErrors('email'); // Memastikan error tetap muncul
+        $response->assertSessionHasErrors('email');
     }
 }

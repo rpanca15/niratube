@@ -112,23 +112,24 @@ class VideoController extends Controller
     public function destroy($id): RedirectResponse
     {
         $video = Videos::find($id);
-
+    
         if (!$video) {
-            return redirect()->route('videos.index')->with(['error' => 'Video not found.']);
+            return redirect()->route('videos.index')->withErrors(['error' => 'Video not found.']);
         }
-
+    
         if (Auth::id() !== $video->uploader_id) {
-            return redirect()->route('videos.index')->with(['error' => 'Tidak bisa menghapus video milik orang lain']);
+            return redirect()->route('videos.index')->withErrors(['error' => 'Tidak bisa menghapus video milik orang lain']);
         }
-
+    
         if ($video->video && Storage::exists('public/videos/' . $video->video)) {
             Storage::delete('public/videos/' . $video->video);
         }
-
+    
         $video->delete();
-
+    
         return redirect()->route('videos.index')->with(['success' => 'Video Berhasil Dihapus!']);
     }
+    
 
     public function incrementViews($id)
     {
