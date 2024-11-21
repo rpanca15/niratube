@@ -85,7 +85,7 @@ class VideoController extends Controller
         $video = Videos::findOrFail($id);
         return view('videos.edit', compact('video'));
     }
-
+    
     public function update(Request $request, string $id): RedirectResponse
     {
         // Validasi form
@@ -99,6 +99,13 @@ class VideoController extends Controller
 
         $video = Videos::findOrFail($id);
 
+        // Cek apakah uploader_id milik user yang sedang login
+        if ($video->uploader_id !== Auth::id()) {
+            // Mengembalikan redirect jika tidak diizinkan untuk mengedit
+            return redirect()->route('videos.index')->withErrors(['error' => 'You are not authorized to edit this video']);
+        }
+
+        // Lanjutkan dengan update jika validasi berhasil
         $video->update([
             'title' => $request->title,
             'description' => $request->description,
@@ -112,24 +119,24 @@ class VideoController extends Controller
     public function destroy($id): RedirectResponse
     {
         $video = Videos::find($id);
-    
+
         if (!$video) {
             return redirect()->route('videos.index')->withErrors(['error' => 'Video not found.']);
         }
-    
+
         if (Auth::id() !== $video->uploader_id) {
             return redirect()->route('videos.index')->withErrors(['error' => 'Tidak bisa menghapus video milik orang lain']);
         }
-    
+
         if ($video->video && Storage::exists('public/videos/' . $video->video)) {
             Storage::delete('public/videos/' . $video->video);
         }
-    
+
         $video->delete();
-    
+
         return redirect()->route('videos.index')->with(['success' => 'Video Berhasil Dihapus!']);
     }
-    
+
 
     public function incrementViews($id)
     {
