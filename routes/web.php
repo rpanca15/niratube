@@ -24,4 +24,5 @@ Route::middleware('guest')->group(function () {
 
 // Routes tanpa autentikasi
 Route::get('/videos/{id}', [VideoController::class, 'show'])->name('videos.show');
+Route::post('/videos/{id}/like', [VideoController::class, 'likeVideo'])->name('videos.like');
 Route::post('/videos/{id}/increment-views', [VideoController::class, 'incrementViews'])->name('videos.incrementViews');

@@ -44,4 +44,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function videos()
+    {
+        return $this->hasMany(Videos::class, 'uploader_id');
+    }
+
+    public function likedVideos()
+    {
+        return $this->belongsToMany(Videos::class, 'user_video_likes')
+            ->withPivot('status')
+            ->withTimestamps();
+    }
 }

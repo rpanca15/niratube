@@ -55,7 +55,7 @@
                             </p>
                             <p class="flex items-center">
                                 <i class="fas fa-tags mr-1"></i>
-                                <span class="font-medium">{{ $video->category }}</span>
+                                <span class="font-medium">{{ $video->category->name }}</span>
                             </p>
                             <p class="flex items-center">
                                 <i class="fas fa-eye mr-1"></i>
@@ -63,7 +63,7 @@
                             </p>
                             <p class="flex items-center">
                                 <i class="fas fa-thumbs-up mr-1"></i>
-                                <span class="font-medium">{{ $video->likes }}</span>
+                                <span class="font-medium">{{ $video->likes_count }}</span>
                             </p>
                         </div>
                     </div>
@@ -87,7 +87,7 @@
                 <div class="col-span-2 py-4 px-4 text-center text-gray-500">Tidak ada video yang tersedia.</div>
             @endforelse
         </div>
-        {{ $videos->links() }}
+        {{-- {{ $videos->links() }} --}}
     </div>
 </div>
 @endsection

@@ -76,22 +76,21 @@
                     <!-- Category Dropdown -->
                     <div class="mb-4">
                         <label for="category" class="block text-sm font-semibold text-gray-700 mb-1">Kategori</label>
-                        <select id="category" name="category"
-                            class="w-full px-3 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 @error('category') border-red-500 @enderror"
+                        <select id="category" name="category_id"
+                            class="w-full px-3 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 @error('category_id') border-red-500 @enderror"
                             required>
-                            <option value="" disabled selected>Pilih Kategori</option>
-                            <option value="Education" {{ old('category') == 'Education' ? 'selected' : '' }}>Edukasi
+                            <option value="" disabled {{ old('category_id') ? '' : 'selected' }}>Pilih Kategori
                             </option>
-                            <option value="Entertainment" {{ old('category') == 'Entertainment' ? 'selected' : '' }}>
-                                Hiburan
-                            </option>
-                            <option value="Technology" {{ old('category') == 'Technology' ? 'selected' : '' }}>Teknologi
-                            </option>
-                            <option value="Other" {{ old('category') == 'Other' ? 'selected' : '' }}>Lainnya</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}"
+                                    {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
                         </select>
 
                         <!-- Error message for category -->
-                        @error('category')
+                        @error('category_id')
                             <div class="text-red-500 mt-2">{{ $message }}</div>
                         @enderror
                     </div>

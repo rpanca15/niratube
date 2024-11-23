@@ -14,7 +14,10 @@
                     Your browser does not support the video tag.
                 </video>
                 <h3 class="text-lg font-semibold text-gray-800">{{ $video->title }}</h3>
-                <p class="text-sm text-gray-600">{{ $video->category }}</p>
+                <div class="flex justify-between items-center">
+                    <p class="text-sm text-gray-600">{{ $video->category->name }}</p>
+                    <span class="text-sm text-gray-600">{{ $video->views }} views</span>
+                </div>
             </a>
         @endforeach
     </div>

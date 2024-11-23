@@ -9,7 +9,7 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $videos = Videos::where('status', 'public')->get();
+        $videos = Videos::where('privacy', 'public')->get();
         return view('home', compact('videos'));
     }
 }
