@@ -60,12 +60,13 @@
             <!-- Video Player Section -->
             <div class="md:col-span-2 mb-4">
                 <!-- Video Container -->
-                <div class="video-container relative bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="video-container relative bg-white rounded-lg shadow-lg overflow-hidden group">
                     <video id="video-player" class="w-full h-auto" loading="lazy" preload="metadata" controlsList="nodownload">
                         <source src="{{ asset('storage/videos/' . $video->video) }}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
-                    <div class="video-controls absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-2">
+
+                    <div class="video-controls absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-2 hidden group-hover:block">
                         <div class="progress-bar-container relative">
                             <div class="progress-bar h-1 bg-gray-600 cursor-pointer mb-2">
                                 <div class="progress bg-blue-500 h-full" style="width: 0%"></div>
@@ -504,7 +505,9 @@
                             console.log('Like berhasil');
                         } else {
                             console.error(data.message);
-                            window.location.href = '/login';
+                            if (data.message == 'Anda harus login untuk memberi like') {
+                                window.location.href = '/login';
+                            }
                         }
                     })
                     .catch(error => console.error('Error liking video:', error));

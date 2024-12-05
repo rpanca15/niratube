@@ -13,7 +13,12 @@ class RegisterController extends Controller
     // Menampilkan form registrasi
     public function showRegistrationForm()
     {
-        return view('auth.register');
+        // return redirect()->route('register');
+        return response()
+            ->view('auth.register')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     // Memproses registrasi
@@ -34,8 +39,8 @@ class RegisterController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255' , 'min:3' , 'regex:/^[a-zA-Z0-9\s]+$/'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users', ''],
+            'name' => ['required', 'string', 'max:255', 'min:3', 'regex:/^[a-zA-Z0-9\s]+$/'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
         ]);
     }

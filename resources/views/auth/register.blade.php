@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Daftar - NiraTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -39,7 +42,8 @@
                 <div class="mb-4">
                     <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                     <input type="password" name="password" id="password"
-                        class="mt-1 p-2 border border-gray-300 rounded-md w-full" placeholder="Masukkan password Anda" />
+                        class="mt-1 p-2 border border-gray-300 rounded-md w-full"
+                        placeholder="Masukkan password Anda" />
                     @error('password')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -47,13 +51,16 @@
                 </div>
 
                 <div class="mb-4">
-                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Konfirmasi Password</label>
+                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Konfirmasi
+                        Password</label>
                     <input type="password" name="password_confirmation" id="password_confirmation"
-                        class="mt-1 p-2 border border-gray-300 rounded-md w-full" placeholder="Konfirmasi password Anda" />
+                        class="mt-1 p-2 border border-gray-300 rounded-md w-full"
+                        placeholder="Konfirmasi password Anda" />
                     @error('password_confirmation')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
-                    <p id="error-password-confirmation" class="text-red-600 text-sm mt-1 hidden">Konfirmasi password wajib diisi.</p>
+                    <p id="error-password-confirmation" class="text-red-600 text-sm mt-1 hidden">Konfirmasi password
+                        wajib diisi.</p>
                 </div>
 
                 <button type="submit"

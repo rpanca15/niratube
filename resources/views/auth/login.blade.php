@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Login - NiraTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -36,7 +39,8 @@
                 <div class="mb-4">
                     <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                     <input type="password" name="password" id="password" required
-                        class="mt-1 p-2 border border-gray-300 rounded-md w-full" placeholder="Masukkan password Anda" />
+                        class="mt-1 p-2 border border-gray-300 rounded-md w-full"
+                        placeholder="Masukkan password Anda" />
                 </div>
                 <button type="submit"
                     class="bg-red-600 text-white px-4 py-2 rounded-lg w-full hover:bg-red-700 transition">Login</button>
