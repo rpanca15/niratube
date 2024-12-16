@@ -52,6 +52,11 @@ class User extends Authenticatable
         return $this->hasMany(Videos::class, 'uploader_id');
     }
 
+    public function playlists()
+    {
+        return $this->belongsToMany(Playlist::class, 'playlist_video');
+    }
+
     public function likedVideos()
     {
         return $this->belongsToMany(Videos::class, 'user_video_likes')

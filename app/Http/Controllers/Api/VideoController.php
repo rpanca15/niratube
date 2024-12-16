@@ -47,16 +47,21 @@ class VideoController extends BaseController
      */
     public function store(Request $request)
     {
-        // Validasi form
-        $request->validate([
-            'video'         => 'required|mimes:mp4,avi,mov,mkv|max:20480', // 20MB untuk video
-            'title'         => 'required|min:5',
-            'description'   => 'required|min:10',
-            'category_id'   => 'required|integer|exists:categories,id', // Validasi id kategori
-            'privacy'       => 'required|in:private,public', // Status bisa private atau public
+        // Validasi form menggunakan Validator
+        $validator = Validator::make($request->all(), [
+            'video'       => 'required|mimes:mp4,avi,mov,mkv|max:20480', // 20MB untuk video
+            'title'       => 'required|min:5',
+            'description' => 'required|min:10',
+            'category_id' => 'required|integer|exists:categories,id', // Validasi id kategori
+            'privacy'     => 'required|in:private,public', // Status bisa private atau public
         ]);
 
-        // Pastikan pengguna sudah login
+        // Jika validasi gagal, kembalikan respon dengan error
+        if ($validator->fails()) {
+            return $this->sendError('Validation Error', $validator->errors(), 422);
+        }
+
+        // Periksa apakah pengguna sudah login
         if (!Auth::check()) {
             return $this->sendError('Unauthorized', ['message' => 'You must be logged in to upload a video.'], 401);
         }
@@ -78,9 +83,8 @@ class VideoController extends BaseController
 
         // Mengembalikan respons JSON dengan BaseController
         return $this->sendResponse([
-            // 'message' => 'Video berhasil diunggah.',
-            'video'   => $newVideo,
-            'path'    => $videoPath,
+            'video' => $newVideo,
+            'path'  => $videoPath,
         ], 'Video uploaded successfully.', 201);
     }
 
@@ -101,6 +105,7 @@ class VideoController extends BaseController
         // Mengembalikan respons JSON dengan BaseController
         return $this->sendResponse([
             'video' => $video,
+            'video_url' => asset('storage/videos/' . $video->video), // URL video
             'relatedVideos' => $relatedVideos,
         ], 'Video and related videos retrieved successfully.');
     }
@@ -110,7 +115,6 @@ class VideoController extends BaseController
      */
     public function update(Request $request, string $id)
     {
-        // Validasi data menggunakan Validator
         $validator = Validator::make($request->all(), [
             'title' => 'required|min:5',
             'description' => 'required|min:10',
@@ -118,12 +122,10 @@ class VideoController extends BaseController
             'privacy' => 'required|in:private,public',
         ]);
 
-        // Jika validasi gagal, kembalikan pesan error menggunakan sendError
         if ($validator->fails()) {
             return $this->sendError('Validation Error', $validator->errors(), 422);
         }
 
-        // Temukan video berdasarkan ID
         $video = Videos::findOrFail($id);
 
         // Periksa otorisasi
@@ -170,5 +172,133 @@ class VideoController extends BaseController
 
         // Mengembalikan respons JSON dengan BaseController
         return $this->sendResponse([], 'Video deleted successfully.');
+    }
+
+    /**
+     * Increment views for a video.
+     */
+    public function incrementViews($id)
+    {
+        $video = Videos::findOrFail($id);
+
+        // Periksa apakah pengguna sedang melihat videonya sendiri
+        if (Auth::check() && $video->uploader_id === Auth::id()) {
+            return $this->sendError('Cannot increment views on your own video.', [], 403);
+        }
+
+        // Tambah jumlah views
+        $video->increment('views');
+
+        return $this->sendResponse([
+            'video_id' => $video->id,
+            'views' => $video->views,
+        ], 'Video views incremented successfully.');
+    }
+
+    /**
+     * Add a like to a video.
+     */
+    public function likeVideo(Request $request, $id)
+    {
+        $video = Videos::findOrFail($id);
+
+        if (!Auth::check()) {
+            return $this->sendError('You must be logged in to like a video.', [], 401);
+        }
+
+        $user = Auth::user();
+
+        // Pemilik video tidak boleh like videonya sendiri
+        if ($video->uploader_id === $user->id) {
+            return $this->sendError('Cannot like your own video.', [], 403);
+        }
+
+        // Cek apakah user sudah pernah like video ini sebelumnya
+        $like = $video->likes()->where('user_id', $user->id)->first();
+
+        if ($like) {
+            // Toggle status like
+            $like->status = $like->status === 'active' ? 'inactive' : 'active';
+            $like->save();
+        } else {
+            // Tambahkan like baru
+            $video->likes()->create([
+                'user_id' => $user->id,
+                'status' => 'active',
+            ]);
+        }
+
+        $likesCount = $video->likes()->where('status', 'active')->count();
+        $isLiked = $video->likes()->where('user_id', $user->id)->where('status', 'active')->exists();
+
+        return $this->sendResponse([
+            'video_id' => $video->id,
+            'likes_count' => $likesCount,
+            'is_liked' => $isLiked,
+        ], 'Video like status updated successfully.');
+    }
+
+    /**
+     * Display the list of videos uploaded by the authenticated user.
+     */
+    public function myVideos(Request $request)
+    {
+        // Periksa apakah pengguna sudah login
+        if (!Auth::check()) {
+            return $this->sendError('Unauthorized', ['message' => 'You must be logged in to view your videos.'], 401);
+        }
+
+        $search = $request->query('search');
+        $userId = Auth::user()->id;
+
+        // Query untuk video yang diunggah oleh pengguna
+        $myVideosQuery = Videos::withCount(['likes' => function ($query) {
+            $query->where('status', 'active');
+        }])->where('uploader_id', $userId);
+
+        // Jika ada pencarian, tambahkan filter berdasarkan judul
+        if ($search) {
+            $myVideosQuery->where('title', 'LIKE', '%' . $search . '%');
+        }
+
+        $myVideos = $myVideosQuery->get();
+
+        // Mengembalikan respons JSON dengan video yang diunggah oleh pengguna
+        return $this->sendResponse([
+            'myVideos' => $myVideos
+        ], 'User\'s videos retrieved successfully.');
+    }
+
+    /**
+     * Display the list of videos liked by the authenticated user.
+     */
+    public function likedVideos(Request $request)
+    {
+        // Periksa apakah pengguna sudah login
+        if (!Auth::check()) {
+            return $this->sendError('Unauthorized', ['message' => 'You must be logged in to view liked videos.'], 401);
+        }
+
+        $search = $request->query('search');
+        $userId = Auth::user()->id;
+
+        // Query untuk video yang disukai oleh pengguna
+        $likedVideosQuery = Videos::withCount(['likes' => function ($query) {
+            $query->where('status', 'active');
+        }])->whereHas('likes', function ($query) use ($userId) {
+            $query->where('user_id', $userId)->where('status', 'active');
+        });
+
+        // Jika ada pencarian, tambahkan filter berdasarkan judul
+        if ($search) {
+            $likedVideosQuery->where('title', 'LIKE', '%' . $search . '%');
+        }
+
+        $likedVideos = $likedVideosQuery->get();
+
+        // Mengembalikan respons JSON dengan video yang disukai oleh pengguna
+        return $this->sendResponse([
+            'likedVideos' => $likedVideos
+        ], 'Liked videos retrieved successfully.');
     }
 }

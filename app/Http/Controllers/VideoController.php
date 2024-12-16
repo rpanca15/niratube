@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Playlist;
 use App\Models\Videos;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
@@ -23,22 +24,31 @@ class VideoController extends Controller
 
         $userId = Auth::user()->id;
 
-        if ($search) {
-            $videos = Videos::withCount(['likes' => function ($query) {
-                $query->where('status', 'active'); // Menghitung hanya yang aktif
-            }])
-                ->where('title', 'LIKE', '%' . $search . '%')
-                ->where('uploader_id', $userId)
-                ->get();
-        } else {
-            $videos = Videos::withCount(['likes' => function ($query) {
-                $query->where('status', 'active'); // Menghitung hanya yang aktif
-            }])
-                ->where('uploader_id', $userId)
-                ->get();
+        // Video Saya
+        $myVideosQuery = Videos::withCount(['likes' => function ($query) {
+            $query->where('status', 'active');
+        }])->where('uploader_id', $userId);
+
+        if ($search && $request->tab === 'my-videos') {
+            $myVideosQuery->where('title', 'LIKE', '%' . $search . '%');
         }
 
-        return view('videos.index', compact('videos', 'categories'));
+        $myVideos = $myVideosQuery->get();
+
+        // Video yang Disukai
+        $likedVideosQuery = Videos::withCount(['likes' => function ($query) {
+            $query->where('status', 'active');
+        }])->whereHas('likes', function ($query) use ($userId) {
+            $query->where('user_id', $userId)->where('status', 'active');
+        });
+
+        if ($search && $request->tab === 'liked-videos') {
+            $likedVideosQuery->where('title', 'LIKE', '%' . $search . '%');
+        }
+
+        $likedVideos = $likedVideosQuery->get();
+
+        return view('videos.index', compact('myVideos', 'likedVideos', 'categories', 'search'));
     }
 
     public function create(): View
@@ -77,16 +87,16 @@ class VideoController extends Controller
         return redirect()->route('videos.index')->with(['success' => 'Data Berhasil Disimpan dan Video Disukai!']);
     }
 
-    public function show(string $id): View
+    public function show($id)
     {
-        $video = Videos::with('likes')->findOrFail($id);
-
+        $video = Videos::findOrFail($id);
         $relatedVideos = Videos::where('category_id', $video->category_id)
-            ->where('id', '!=', $id)
-            ->limit(20)
+            ->where('id', '!=', $video->id)
             ->get();
 
-        return view('videos.show', compact('video', 'relatedVideos'));
+        $userPlaylists = Playlist::where('user_id', Auth::id())->get(); // Ambil playlist milik pengguna
+
+        return view('videos.show', compact('video', 'relatedVideos', 'userPlaylists'));
     }
 
     public function edit(string $id): View
@@ -151,7 +161,7 @@ class VideoController extends Controller
 
         if ($video->uploader_id == Auth::id()) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Pemilik video tidak dapat menambah jumlah tayangan.'
             ], 403);
         }
@@ -194,5 +204,32 @@ class VideoController extends Controller
             'likes_count' => $likesCount,
             'is_liked' => $isLiked
         ]);
+    }
+
+    public function addToPlaylist(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'playlist_id' => 'required|exists:playlists,id',
+            'video_id' => 'required|exists:videos,id',
+        ]);
+
+        $playlist = Playlist::findOrFail($request->playlist_id);
+
+        // Pastikan user hanya dapat menambahkan video ke playlist miliknya
+        if ($playlist->user_id !== Auth::id()) {
+            return redirect()->back()->withErrors(['error' => 'Anda tidak berhak menambahkan video ke playlist ini.']);
+        }
+
+        $videoId = $request->video_id;
+
+        // Cek apakah video sudah ada di playlist
+        if ($playlist->videos()->where('id', $videoId)->exists()) {
+            return redirect()->back()->withErrors(['error' => 'Video ini sudah ada di playlist.']);
+        }
+
+        // Tambahkan video ke playlist
+        $playlist->videos()->attach($videoId);
+
+        return redirect()->back()->with('success', 'Video berhasil ditambahkan ke playlist!');
     }
 }

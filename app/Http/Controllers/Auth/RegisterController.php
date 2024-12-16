@@ -13,12 +13,13 @@ class RegisterController extends Controller
     // Menampilkan form registrasi
     public function showRegistrationForm()
     {
+        return view('auth.register');
         // return redirect()->route('register');
-        return response()
-            ->view('auth.register')
-            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            ->header('Pragma', 'no-cache')
-            ->header('Expires', '0');
+        // return response()
+        //     ->view('auth.register')
+        //     ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        //     ->header('Pragma', 'no-cache')
+        //     ->header('Expires', '0');
     }
 
     // Memproses registrasi

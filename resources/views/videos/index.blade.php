@@ -1,123 +1,93 @@
-@extends('layouts.app')
+@extends('layouts.sidebar')
 
 @section('title')
     Niratube - Video Saya
 @endsection
 
 @section('content')
-<div class="container mx-auto px-4 mt-[80px]">
-    <div class="grid grid-cols-1 md:grid-cols-2 justify-between items-center mb-8">
-        <!-- Grid Kiri (H2) -->
-        <div>
-            <h1 class="text-3xl font-bold">Video Saya</h1>
-        </div>
-
-        <!-- Grid Kanan (Search dan Upload) -->
-        <div class="flex justify-end space-x-4">
-            <!-- Form Pencarian -->
-            <form action="{{ route('videos.index') }}" method="GET" id="searchForm" class="flex items-center">
-                <input type="text" name="search" value="{{ request()->query('search') }}"
-                    placeholder="Cari video..." class="px-4 py-2 border rounded-lg focus:outline-none"
-                    id="searchInput" />
-            </form>
-
-            <!-- Tombol Upload -->
-            <a href="{{ route('videos.create') }}"
-                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                <i class="fas fa-upload h-5 w-5 mr-2"></i>
-                Upload
-            </a>
-        </div>
-    </div>
-
-    <!-- Daftar Video dalam Kartu -->
-    <div class="overflow-x-auto">
-        <div class="grid grid-cols-2 gap-4">
-            @forelse($videos as $video)
-                <div class="bg-white shadow-md rounded-lg p-3 text-sm flex items-center">
-                    <a href="{{ route('videos.show', $video->id) }}" class="flex items-start">
-                        <video class="video-preview w-60 h-auto rounded-lg mr-4" muted disablePictureInPicture
-                            oncontextmenu="return false;">
-                            <source src="{{ asset('storage/videos/' . $video->video) }}" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
+    <div class="container mx-auto px-4">
+        <!-- Tab Content -->
+        <div id="my-videos" class="tab-content active">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-3xl font-bold">Video Saya</span>
+                <div class="flex justify-between gap-4 items-center">
+                    <!-- Search Form -->
+                    <form action="{{ route('videos.index') }}" method="GET">
+                        <input type="hidden" name="tab" value="my-videos">
+                        <input type="text" name="search" value="{{ request('tab') === 'my-videos' ? $search : '' }}"
+                            placeholder="Cari video saya..." class="px-4 py-2 border rounded-lg focus:outline-none">
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg ml-2">Cari</button>
+                    </form>
+                    <a href="{{ route('videos.create') }}"
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-upload h-5 w-5 mr-2"></i>
+                        Upload
                     </a>
-                    <div class="flex-1 h-auto">
-                        <h2 class="flex-start text-lg font-semibold text-gray-800 mb-2">{{ $video->title }}</h2>
-                        <div class="grid grid-cols-2 gap-1 text-xs text-gray-600">
-                            <p class="flex items-center">
-                                <i class="fas fa-calendar-alt mr-1"></i>
-                                <span class="font-medium">{{ $video->created_at->format('d M Y') }}</span>
-                            </p>
-                            <p class="flex items-center">
-                                <i class="fas fa-check-circle mr-1"></i>
-                                <span class="font-medium">{{ $video->status }}</span>
-                            </p>
-                            <p class="flex items-center">
-                                <i class="fas fa-tags mr-1"></i>
-                                <span class="font-medium">{{ $video->category->name }}</span>
-                            </p>
-                            <p class="flex items-center">
-                                <i class="fas fa-eye mr-1"></i>
-                                <span class="font-medium">{{ $video->views }}</span>
-                            </p>
-                            <p class="flex items-center">
-                                <i class="fas fa-thumbs-up mr-1"></i>
-                                <span class="font-medium">{{ $video->likes_count }}</span>
-                            </p>
-                        </div>
-                    </div>
-                    <div class="ml-auto">
-                        <form onsubmit="return confirm('Apakah Anda Yakin ?');"
-                            action="{{ route('videos.destroy', $video->id) }}" method="POST">
-                            <a href="{{ route('videos.edit', $video->id) }}"
-                                class="bg-orange-600 text-white px-2 py-1 rounded-l-lg hover:bg-orange-700 transition inline-block">
-                                <i class="fas fa-pen w-4 h-4"></i>
-                            </a>
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                class="bg-red-600 text-white px-2 py-1 rounded-r-lg hover:bg-red-700 transition">
-                                <i class="fas fa-trash w-4 h-4"></i>
-                            </button>
-                        </form>
-                    </div>
                 </div>
-            @empty
-                <div class="col-span-2 py-4 px-4 text-center text-gray-500">Tidak ada video yang tersedia.</div>
-            @endforelse
+            </div>
+
+            @include('videos.partials.my-videos', ['videos' => $myVideos])
         </div>
-        {{-- {{ $videos->links() }} --}}
+
+        <div id="liked-videos" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-3xl font-bold mb-4">Video yang Disukai</span>
+
+                <!-- Search Form -->
+                <form action="{{ route('videos.index') }}" method="GET" class="mb-4">
+                    <input type="hidden" name="tab" value="liked-videos">
+                    <input type="text" name="search" value="{{ request('tab') === 'liked-videos' ? $search : '' }}"
+                        placeholder="Cari video yang disukai..." class="px-4 py-2 border rounded-lg focus:outline-none">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg ml-2">Cari</button>
+                </form>
+            </div>
+
+            @include('videos.partials.liked-videos', ['videos' => $likedVideos])
+        </div>
     </div>
-</div>
 @endsection
 
 @section('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const videos = document.querySelectorAll('.video-preview');
-        videos.forEach(video => {
-            function playVideo() {
-                video.currentTime = 0;
-                video.play();
-            }
-            video.addEventListener('mouseover', function() { playVideo(); });
-            video.addEventListener('mouseleave', function() {
-                video.pause();
-                video.currentTime = 0;
-            });
-            video.addEventListener('timeupdate', function() {
-                if (video.currentTime >= 5) {
-                    video.currentTime = 0;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabLinks = document.querySelectorAll('.sidebar-link');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            const currentTab = new URLSearchParams(window.location.search).get('tab') || 'my-videos';
+
+            tabLinks.forEach(link => {
+                if (link.dataset.tab === currentTab) {
+                    link.classList.add('bg-blue-100');
+                } else {
+                    link.classList.remove('bg-blue-100');
                 }
             });
-        });
-    });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchInput');
-        const searchForm = document.getElementById('searchForm');
-        searchInput.addEventListener('input', function() { searchForm.submit(); });
-    });
-</script>
+            tabContents.forEach(content => {
+                if (content.id === currentTab) {
+                    content.classList.remove('hidden');
+                    content.classList.add('active');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    const selectedTab = this.dataset.tab;
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', selectedTab);
+                    history.pushState({}, '', url);
+
+                    tabLinks.forEach(l => l.classList.remove('bg-blue-100'));
+                    tabContents.forEach(content => content.classList.add('hidden'));
+
+                    this.classList.add('bg-blue-100');
+                    document.querySelector(`#${selectedTab}`).classList.remove('hidden');
+                });
+            });
+        });
+    </script>
 @endsection

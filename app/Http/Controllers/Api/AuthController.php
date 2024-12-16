@@ -9,7 +9,6 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends BaseController
 {
@@ -82,21 +81,19 @@ class AuthController extends BaseController
      */
     public function logout(Request $request)
     {
-        // Log untuk memastikan token ditemukan
-        Log::info('User tokens: ', ['tokens' => $request->user()->tokens]);
+        // Periksa apakah user tersedia
+        if ($user = $request->user()) {
+            // Hapus semua token yang terkait dengan user
+            $user->tokens->each(function ($token) {
+                $token->delete();
+            });
+        }
 
-        // Menghapus semua token yang terkait dengan pengguna yang sedang login
-        $request->user()->tokens->each(function ($token) {
-            Log::info('Deleting token: ', ['token' => $token->id]);
-            $token->delete();
-        });
-
-        // Atau revoke hanya token yang sedang aktif
-        Log::info('Deleting current active token: ', ['token' => $request->user()->currentAccessToken()->id]);
-        $request->user()->currentAccessToken()->delete();
-
-        return $this->sendResponse(null, 'You have been successfully logged out.', 200);
+        return response()->json([
+            'message' => 'You have been successfully logged out.',
+        ], 200);
     }
+
 
     /**
      * Menampilkan daftar pengguna (opsional, tergantung kebutuhan).

@@ -51,6 +51,11 @@ class Videos extends Model
             ->withTimestamps();
     }
 
+    public function playlists()
+    {
+        return $this->belongsToMany(Playlist::class, 'playlist_video', 'video_id', 'playlist_id');
+    }
+
     /**
      * Menghitung jumlah likes dengan status 'active'.
      *
