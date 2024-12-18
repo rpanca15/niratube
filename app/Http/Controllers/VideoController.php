@@ -48,6 +48,14 @@ class VideoController extends Controller
 
         $likedVideos = $likedVideosQuery->get();
 
+        if ($request->ajax()) {
+            if ($request->tab === 'my-videos') {
+                return view('videos.partials.my-videos', ['videos' => $myVideos])->render();
+            } elseif ($request->tab === 'liked-videos') {
+                return view('videos.partials.liked-videos', ['videos' => $likedVideos])->render();
+            }
+        }        
+
         return view('videos.index', compact('myVideos', 'likedVideos', 'categories', 'search'));
     }
 
