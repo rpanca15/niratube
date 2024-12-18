@@ -92,24 +92,45 @@ class VideoController extends BaseController
      * Display the specified resource.
      */
     public function show(string $id)
-    {
-        // Mendapatkan video berdasarkan ID, termasuk relasi likes
-        $video = Videos::with('likes')->findOrFail($id);
+{
+    $video = Videos::with('likes')->findOrFail($id);
 
-        // Mendapatkan video terkait berdasarkan kategori yang sama (kecuali video yang sedang dilihat)
-        $relatedVideos = Videos::where('category_id', $video->category_id)
-            ->where('id', '!=', $id)
-            ->limit(20)
-            ->get();
-
-        // Mengembalikan respons JSON dengan BaseController
-        return $this->sendResponse([
-            'video' => $video,
-            'video_url' => asset('storage/videos/' . $video->video), // URL video
-            'relatedVideos' => $relatedVideos,
-        ], 'Video and related videos retrieved successfully.');
+    // Menambahkan data status apakah video disukai oleh pengguna
+    $isLiked = false;
+    if (Auth::check()) {
+        $isLiked = $video->likes()->where('user_id', Auth::id())->where('status', 'active')->exists();
     }
 
+    $relatedVideos = Videos::where('category_id', $video->category_id)
+        ->where('id', '!=', $id)
+        ->limit(20)
+        ->get();
+
+    return $this->sendResponse([
+        'video' => $video,
+        'video_url' => asset('storage/videos/' . $video->video),
+        'relatedVideos' => $relatedVideos,
+        'is_liked' => $isLiked, // Tambahkan status disukai
+        'likes_count' => $video->likes()->where('status', 'active')->count(), // Jumlah likes aktif
+    ], 'Video and related videos retrieved successfully.');
+}
+
+public function edit(string $id)
+    {
+        $video = Videos::find($id);
+
+        if (!$video) {
+            return $this->sendError('Video not found', ['message' => 'Video not found.'], 404);
+        }
+
+        $categories = Category::all();
+
+        return $this->sendResponse([
+            'video' => $video,
+            'categories' => $categories,
+        ], 'Video data retrieved successfully.');
+    }
+    
     /**
      * Update the specified resource in storage.
      */
