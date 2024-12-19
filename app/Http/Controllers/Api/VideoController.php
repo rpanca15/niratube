@@ -20,10 +20,11 @@ class VideoController extends BaseController
         // Mengambil parameter pencarian dari query string
         $search = $request->query('search');
 
-        // Query untuk mengambil semua video
+        // Query untuk mengambil semua video dengan kondisi privacy public
         $videosQuery = Videos::withCount(['likes' => function ($query) {
             $query->where('status', 'active'); // Menghitung hanya likes yang aktif
-        }]);
+        }])
+            ->where('privacy', 'public'); // Menambahkan filter privacy public
 
         // Jika parameter pencarian tersedia, tambahkan filter judul
         if ($search) {
@@ -42,6 +43,28 @@ class VideoController extends BaseController
         ], 'Videos and categories retrieved successfully.');
     }
 
+    // Mendapatkan semua kategori
+    public function category()
+    {
+        try {
+            // Ambil semua kategori
+            $categories = Category::all();
+
+            // Kembalikan response JSON dengan status sukses
+            return response()->json([
+                'status' => 'success',
+                'data' => $categories,
+            ], 200);
+        } catch (\Exception $e) {
+            // Jika terjadi error, kembalikan error response
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to load categories',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -49,7 +72,7 @@ class VideoController extends BaseController
     {
         // Validasi form menggunakan Validator
         $validator = Validator::make($request->all(), [
-            'video'       => 'required|mimes:mp4,avi,mov,mkv|max:20480', // 20MB untuk video
+            'video'       => 'required|string', // Changed to accept base64 string
             'title'       => 'required|min:5',
             'description' => 'required|min:10',
             'category_id' => 'required|integer|exists:categories,id', // Validasi id kategori
@@ -66,56 +89,70 @@ class VideoController extends BaseController
             return $this->sendError('Unauthorized', ['message' => 'You must be logged in to upload a video.'], 401);
         }
 
-        // Upload video
-        $video = $request->file('video');
-        $videoPath = $video->storeAs('public/videos', $video->hashName());
+        try {
+            // Decode base64 string
+            $videoData = explode(',', $request->video);
+            $videoContent = base64_decode($videoData[1] ?? $request->video);
 
-        // Create video record
-        $newVideo = Videos::create([
-            'video'         => $video->hashName(),
-            'title'         => $request->title,
-            'description'   => $request->description,
-            'category_id'   => $request->category_id,
-            'privacy'       => $request->privacy,
-            'uploader_id'   => Auth::id(), // Gunakan ID user yang sedang login
-            'views'         => 0, // Awal views adalah 0
-        ]);
+            if (!$videoContent) {
+                return $this->sendError('Invalid video data', ['message' => 'The provided video data is invalid.'], 422);
+            }
 
-        // Mengembalikan respons JSON dengan BaseController
-        return $this->sendResponse([
-            'video' => $newVideo,
-            'path'  => $videoPath,
-        ], 'Video uploaded successfully.', 201);
+            // Generate unique filename
+            $filename = uniqid() . '_' . time() . '.mp4';
+
+            // Save video file
+            Storage::put('public/videos/' . $filename, $videoContent);
+
+            // Membuat record video baru di database
+            $newVideo = Videos::create([
+                'video'         => $filename,
+                'title'         => $request->title,
+                'description'   => $request->description,
+                'category_id'   => $request->category_id,
+                'privacy'       => $request->privacy,
+                'uploader_id'   => Auth::id(), // Menggunakan ID user yang sedang login
+                'views'         => 0, // Awal views adalah 0
+            ]);
+
+            return $this->sendResponse([
+                'video' => $newVideo,
+                'path'  => Storage::url('public/videos/' . $filename),
+            ], 'Video uploaded successfully.', 201);
+        } catch (\Exception $e) {
+            return $this->sendError('Upload Error', ['message' => $e->getMessage()], 500);
+        }
     }
 
     /**
      * Display the specified resource.
      */
     public function show(string $id)
-{
-    $video = Videos::with('likes')->findOrFail($id);
+    {
+        $video = Videos::with('likes')->findOrFail($id);
 
-    // Menambahkan data status apakah video disukai oleh pengguna
-    $isLiked = false;
-    if (Auth::check()) {
-        $isLiked = $video->likes()->where('user_id', Auth::id())->where('status', 'active')->exists();
+        // Menambahkan data status apakah video disukai oleh pengguna
+        $isLiked = false;
+        if (Auth::check()) {
+            $isLiked = $video->likes()->where('user_id', Auth::id())->where('status', 'active')->exists();
+        }
+
+        $relatedVideos = Videos::where('category_id', $video->category_id)
+            ->where('id', '!=', $id)
+            ->limit(20)
+            ->get();
+
+        return $this->sendResponse([
+            'video' => $video,
+            'video_url' => asset('storage/videos/' . $video->video),
+            'relatedVideos' => $relatedVideos,
+            'is_liked' => $isLiked, // Tambahkan status disukai
+            'likes_count' => $video->likes()->where('status', 'active')->count(), // Jumlah likes aktif
+        ], 'Video and related videos retrieved successfully.');
     }
 
-    $relatedVideos = Videos::where('category_id', $video->category_id)
-        ->where('id', '!=', $id)
-        ->limit(20)
-        ->get();
 
-    return $this->sendResponse([
-        'video' => $video,
-        'video_url' => asset('storage/videos/' . $video->video),
-        'relatedVideos' => $relatedVideos,
-        'is_liked' => $isLiked, // Tambahkan status disukai
-        'likes_count' => $video->likes()->where('status', 'active')->count(), // Jumlah likes aktif
-    ], 'Video and related videos retrieved successfully.');
-}
-
-public function edit(string $id)
+    public function edit(string $id)
     {
         $video = Videos::find($id);
 
@@ -130,7 +167,7 @@ public function edit(string $id)
             'categories' => $categories,
         ], 'Video data retrieved successfully.');
     }
-    
+
     /**
      * Update the specified resource in storage.
      */

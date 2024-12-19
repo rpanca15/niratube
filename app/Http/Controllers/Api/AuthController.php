@@ -67,13 +67,11 @@ class AuthController extends BaseController
             'remember_token' => Str::random(60),  // Menambahkan token untuk remember me
         ]);
 
-        // Buat token untuk pengguna yang baru didaftarkan
-        $token = $user->createToken('my-app-token')->plainTextToken;
-
-        Log::info('User registered and token generated: ', ['token' => $token]);
-
-        // Kirimkan respons
-        return $this->sendResponse($token, 'User registered successfully.');
+        // Kembalikan respons tanpa token
+        return $this->sendResponse(
+            ['user' => $user],
+            'User registered successfully.'
+        );
     }
 
     /**
@@ -92,46 +90,5 @@ class AuthController extends BaseController
         return response()->json([
             'message' => 'You have been successfully logged out.',
         ], 200);
-    }
-
-
-    /**
-     * Menampilkan daftar pengguna (opsional, tergantung kebutuhan).
-     */
-    public function index()
-    {
-        // Bisa diisi dengan logika untuk menampilkan pengguna
-    }
-
-    /**
-     * Menyimpan data baru (opsional, tergantung kebutuhan).
-     */
-    public function store(Request $request)
-    {
-        // Bisa diisi dengan logika untuk menyimpan data pengguna baru
-    }
-
-    /**
-     * Menampilkan informasi pengguna berdasarkan ID (opsional, tergantung kebutuhan).
-     */
-    public function show(string $id)
-    {
-        // Bisa diisi dengan logika untuk menampilkan pengguna berdasarkan ID
-    }
-
-    /**
-     * Mengupdate data pengguna berdasarkan ID (opsional, tergantung kebutuhan).
-     */
-    public function update(Request $request, string $id)
-    {
-        // Bisa diisi dengan logika untuk mengupdate data pengguna berdasarkan ID
-    }
-
-    /**
-     * Menghapus data pengguna berdasarkan ID (opsional, tergantung kebutuhan).
-     */
-    public function destroy(string $id)
-    {
-        // Bisa diisi dengan logika untuk menghapus data pengguna berdasarkan ID
     }
 }

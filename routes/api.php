@@ -16,6 +16,7 @@ Route::get('/user', function (Request $request) {
 Route::resource('/videos', VideoController::class)->except(['store', 'update', 'destroy']);
 Route::post('/videos/{video}/increment-view', [VideoController::class, 'incrementViews']);
 Route::get('/videos/{video}/related', [VideoController::class, 'show']); // Rute untuk video terkait
+Route::get('/categories', [VideoController::class, 'category']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/users', [UserController::class, 'index']); // Ambil semua pengguna

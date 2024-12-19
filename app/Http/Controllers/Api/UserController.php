@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -122,12 +123,30 @@ class UserController extends BaseController
      */
     public function profile(Request $request)
     {
-        $user = Auth::user();  // Mendapatkan pengguna berdasarkan token yang sedang aktif
+        try {
+            // Ambil pengguna yang sedang login
+            $user = Auth::user();
 
-        if (!$user) {
-            return $this->sendError('User not found.', 404);
+            // Jika pengguna tidak ditemukan
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found.',
+                ], 404);
+            }
+
+            // Return data pengguna
+            return response()->json([
+                'success' => true,
+                'message' => 'User profile retrieved successfully.',
+                'data' => $user,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        return $this->sendResponse($user, 'User profile retrieved successfully.');
     }
 }
